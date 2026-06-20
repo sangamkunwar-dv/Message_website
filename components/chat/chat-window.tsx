@@ -30,17 +30,43 @@ export function ChatWindow() {
     if (!currentConversation) return
 
     try {
-      const { data, error } = await supabase
-        .from('messages')
-        .select(`*, users(id, username, avatar_url), attachments(*)`)
-        .eq('conversation_id', currentConversation.id)
-        .is('deleted_at', null)
-        .order('created_at', { ascending: true })
-
-      if (error) throw error
-      setMessages(data || [])
+      // Mock messages for demo
+      const mockMessages = [
+        {
+          id: 'm1',
+          conversation_id: currentConversation.id,
+          sender_id: '2',
+          content: 'Hey! How are you doing?',
+          message_type: 'text' as const,
+          created_at: new Date(Date.now() - 7200000).toISOString(),
+          sender: { id: '2', username: currentConversation.participants?.[0]?.username || 'User', avatar_url: '' },
+          attachments: []
+        },
+        {
+          id: 'm2',
+          conversation_id: currentConversation.id,
+          sender_id: currentUser?.id || '1',
+          content: 'Pretty good! Just working on some projects.',
+          message_type: 'text' as const,
+          created_at: new Date(Date.now() - 3600000).toISOString(),
+          sender: { id: currentUser?.id || '1', username: currentUser?.username || 'You', avatar_url: '' },
+          attachments: []
+        },
+        {
+          id: 'm3',
+          conversation_id: currentConversation.id,
+          sender_id: '2',
+          content: 'That sounds interesting! Tell me more about it.',
+          message_type: 'text' as const,
+          created_at: new Date(Date.now() - 1800000).toISOString(),
+          sender: { id: '2', username: currentConversation.participants?.[0]?.username || 'User', avatar_url: '' },
+          attachments: []
+        }
+      ]
+      setMessages(mockMessages)
     } catch (error) {
       console.error('Error loading messages:', error)
+      setMessages([])
     }
   }
 
@@ -48,14 +74,10 @@ export function ChatWindow() {
     if (currentConversation?.conversation_type !== 'direct') return
 
     try {
-      const { data: participants } = await supabase
-        .from('conversation_participants')
-        .select('user_id, users(username, avatar_url)')
-        .eq('conversation_id', currentConversation.id)
-
-      const other = participants?.find(p => p.user_id !== currentUser?.id)
+      // Get other user from participants
+      const other = currentConversation.participants?.[0]
       if (other) {
-        setOtherUser(other.users)
+        setOtherUser(other)
       }
     } catch (error) {
       console.error('Error loading other user:', error)

@@ -1,78 +1,69 @@
 'use client'
 
 import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { useChatStore } from '@/lib/store/chat-store'
 import { Sidebar } from '@/components/chat/sidebar'
-import { redirect } from 'next/navigation'
 
 export default function ChatLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  const router = useRouter()
   const { setCurrentUser, setConversations } = useChatStore()
   const supabase = createClient()
 
   useEffect(() => {
     const initializeChat = async () => {
-      // Get current user
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) {
-        redirect('/auth/login')
-      }
+      try {
+        // Get current user
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) {
+          router.push('/auth/login')
+          return
+        }
 
-      // Fetch user profile
-      const { data: userProfile } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', user.id)
-        .single()
+        // Set mock user
+        const mockUser = {
+          id: user.id,
+          username: user.email?.split('@')[0] || 'User',
+          email: user.email || '',
+          avatar_url: ''
+        }
+        setCurrentUser(mockUser)
 
-      if (userProfile) {
-        setCurrentUser(userProfile)
-      }
-
-      // Fetch conversations
-      const { data: participants } = await supabase
-        .from('conversation_participants')
-        .select('conversation_id, conversations(*)')
-        .eq('user_id', user.id)
-        .order('joined_at', { ascending: false })
-
-      if (participants) {
-        const conversations = participants.map((p: any) => p.conversations)
-        setConversations(conversations)
-      }
-
-      // Subscribe to conversation changes
-      const subscription = supabase
-        .channel('user_conversations')
-        .on(
-          'postgres_changes',
+        // Set mock conversations
+        const mockConversations = [
           {
-            event: '*',
-            schema: 'public',
-            table: 'conversation_participants',
-            filter: `user_id=eq.${user.id}`,
+            id: 'conv-1',
+            conversation_type: 'direct' as const,
+            created_at: new Date(Date.now() - 86400000).toISOString(),
+            participants: [
+              { id: '2', username: 'Alice', email: 'alice@example.com', avatar_url: '' }
+            ]
           },
-          () => {
-            // Refetch conversations on changes
-            initializeChat()
+          {
+            id: 'conv-2',
+            conversation_type: 'direct' as const,
+            created_at: new Date(Date.now() - 172800000).toISOString(),
+            participants: [
+              { id: '3', username: 'Bob', email: 'bob@example.com', avatar_url: '' }
+            ]
           }
-        )
-        .subscribe()
-
-      return () => {
-        subscription.unsubscribe()
+        ]
+        setConversations(mockConversations)
+      } catch (error) {
+        console.error('Error initializing chat:', error)
       }
     }
 
     initializeChat()
-  }, [supabase, setCurrentUser, setConversations])
+  }, [setCurrentUser, setConversations, router])
 
   return (
-    <div className="flex h-screen">
+    <div className="flex h-screen bg-white">
       <Sidebar />
       {children}
     </div>

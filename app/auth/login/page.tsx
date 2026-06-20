@@ -21,6 +21,10 @@ export default function Login() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!supabase) return
+    if (!email) {
+      setError('Please enter an email')
+      return
+    }
     
     setLoading(true)
     setError(null)
@@ -33,9 +37,12 @@ export default function Login() {
 
       if (loginError) throw loginError
 
-      router.push('/chat')
+      // Small delay to ensure auth state is set
+      setTimeout(() => {
+        router.push('/chat')
+      }, 100)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred')
+      setError(err instanceof Error ? err.message : 'An error occurred. Try with any email and password.')
     } finally {
       setLoading(false)
     }
