@@ -25,35 +25,31 @@ export default function ChatLayout({
           return
         }
 
-        // Set mock user
-        const mockUser = {
-          id: user.id,
-          username: user.email?.split('@')[0] || 'User',
-          email: user.email || '',
-          avatar_url: ''
-        }
-        setCurrentUser(mockUser)
+        // Fetch user profile
+        const { data: userProfile } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', user.id)
+          .single()
 
-        // Set mock conversations
-        const mockConversations = [
-          {
-            id: 'conv-1',
-            conversation_type: 'direct' as const,
-            created_at: new Date(Date.now() - 86400000).toISOString(),
-            participants: [
-              { id: '2', username: 'Alice', email: 'alice@example.com', avatar_url: '' }
-            ]
-          },
-          {
-            id: 'conv-2',
-            conversation_type: 'direct' as const,
-            created_at: new Date(Date.now() - 172800000).toISOString(),
-            participants: [
-              { id: '3', username: 'Bob', email: 'bob@example.com', avatar_url: '' }
-            ]
-          }
-        ]
-        setConversations(mockConversations)
+        if (userProfile) {
+          setCurrentUser(userProfile)
+        }
+
+        // Fetch conversations
+        const { data: participants } = await supabase
+          .from('conversation_participants')
+          .select('conversation_id, conversations(*)')
+          .eq('user_id', user.id)
+          .order('joined_at', { ascending: false })
+
+        if (participants) {
+          const conversations = participants.map((p: any) => ({
+            ...p.conversations,
+            participants: [] // Will be loaded per conversation
+          }))
+          setConversations(conversations)
+        }
       } catch (error) {
         console.error('Error initializing chat:', error)
       }

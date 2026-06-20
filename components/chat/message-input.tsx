@@ -23,19 +23,25 @@ export function MessageInput({ conversationId }: MessageInputProps) {
 
     setSending(true)
     try {
-      // Create mock message
-      const message = {
-        id: Math.random().toString(36).substr(2, 9),
-        conversation_id: conversationId,
-        sender_id: currentUser.id,
-        content: content.trim(),
-        message_type: 'text' as const,
-        created_at: new Date().toISOString(),
+      const { data: message, error } = await supabase
+        .from('messages')
+        .insert({
+          conversation_id: conversationId,
+          sender_id: currentUser.id,
+          content: content.trim(),
+          message_type: 'text',
+        })
+        .select()
+        .single()
+
+      if (error) throw error
+
+      addMessage({
+        ...message,
         sender: currentUser,
         attachments: [],
-      }
+      })
 
-      addMessage(message)
       setContent('')
     } catch (error) {
       console.error('Error sending message:', error)
@@ -56,29 +62,46 @@ export function MessageInput({ conversationId }: MessageInputProps) {
         if (file.type.startsWith('image/')) messageType = 'image'
         else if (file.type.startsWith('video/')) messageType = 'video'
 
-        // Create mock message with file
-        const messageId = Math.random().toString(36).substr(2, 9)
-        const message = {
-          id: messageId,
-          conversation_id: conversationId,
-          sender_id: currentUser.id,
-          message_type: messageType,
-          content: file.name,
-          created_at: new Date().toISOString(),
+        // Create message record
+        const { data: message, error: msgError } = await supabase
+          .from('messages')
+          .insert({
+            conversation_id: conversationId,
+            sender_id: currentUser.id,
+            message_type: messageType,
+            content: file.name,
+          })
+          .select()
+          .single()
+
+        if (msgError) throw msgError
+
+        // Create attachment record with file URL
+        const fileUrl = URL.createObjectURL(file)
+        const { error: attachError } = await supabase.from('attachments').insert({
+          message_id: message.id,
+          file_url: fileUrl,
+          file_name: file.name,
+          file_type: file.type,
+          file_size: file.size,
+        })
+
+        if (attachError) throw attachError
+
+        addMessage({
+          ...message,
           sender: currentUser,
           attachments: [
             {
-              id: messageId,
-              message_id: messageId,
-              file_url: URL.createObjectURL(file),
+              id: message.id,
+              message_id: message.id,
+              file_url: fileUrl,
               file_name: file.name,
               file_type: file.type,
               file_size: file.size,
             },
           ],
-        }
-
-        addMessage(message)
+        })
       }
     } catch (error) {
       console.error('Error uploading file:', error)

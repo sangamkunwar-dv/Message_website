@@ -35,14 +35,16 @@ export default function Login() {
         password,
       })
 
-      if (loginError) throw loginError
+      if (loginError) {
+        throw loginError
+      }
 
-      // Small delay to ensure auth state is set
-      setTimeout(() => {
-        router.push('/chat')
-      }, 100)
+      // Redirect to chat after successful login
+      router.push('/chat')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred. Try with any email and password.')
+      const errorMessage = err instanceof Error ? err.message : 'An error occurred'
+      setError(errorMessage)
+      console.error('Login error:', err)
     } finally {
       setLoading(false)
     }
@@ -61,7 +63,8 @@ export default function Login() {
             </label>
             <input
               id="email"
-              type="email"
+              type="text"
+              inputMode="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
