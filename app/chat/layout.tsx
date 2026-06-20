@@ -59,7 +59,7 @@ export default function ChatLayout({
   }, [setCurrentUser, setConversations, router])
 
   return (
-    <div className="flex h-screen bg-white">
+    <div className="flex h-screen bg-background text-foreground">
       <Sidebar />
       {children}
     </div>

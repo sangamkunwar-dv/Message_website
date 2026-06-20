@@ -1,16 +1,34 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { useChatStore } from '@/lib/store/chat-store'
 import { SearchUsers } from './search-users'
 import { ConversationItem } from './conversation-item'
+import { useTheme } from '@/lib/providers/theme-provider'
+import { Menu, X, LogOut, Settings, User, Moon, Sun } from 'lucide-react'
 import Link from 'next/link'
 
 export function Sidebar() {
   const { conversations, currentUser, setCurrentConversation } = useChatStore()
+  const [themeContext, setThemeContext] = useState<any>(null)
+  const router = useRouter()
   const [searchOpen, setSearchOpen] = useState(false)
+  const [mobileOpen, setMobileOpen] = useState(false)
   const supabase = createClient()
+
+  useEffect(() => {
+    try {
+      const context = useTheme()
+      setThemeContext(context)
+    } catch (e) {
+      // Theme not available
+    }
+  }, [])
+
+  const theme = themeContext?.theme
+  const toggleTheme = themeContext?.toggleTheme
 
   const handleLogout = async () => {
     try {
@@ -18,72 +36,191 @@ export function Sidebar() {
     } catch (error) {
       console.error('Logout error:', error)
     }
-    if (typeof window !== 'undefined') {
-      window.location.href = '/auth/login'
-    }
+    router.push('/auth/login')
   }
 
   return (
-    <div className="w-80 h-screen bg-white border-r border-gray-200 flex flex-col">
-      {/* Header */}
-      <div className="p-4 border-b border-gray-200">
-        <div className="flex items-center justify-between mb-4">
-          <h1 className="text-2xl font-bold text-gray-900">Chats</h1>
+    <>
+      {/* Desktop Sidebar */}
+      <div className="hidden sm:flex w-full sm:w-64 md:w-80 h-screen bg-card border-r border-border flex-col">
+        {/* Header */}
+        <div className="p-4 border-b border-border">
+          <div className="flex items-center justify-between mb-4">
+            <h1 className="text-2xl font-bold">Chats</h1>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setSearchOpen(!searchOpen)}
+                className="p-2 hover:bg-muted rounded-lg transition-colors"
+                aria-label="Search"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          {/* User Info */}
+          {currentUser && (
+            <div className="bg-muted rounded-lg p-3 mb-4">
+              <p className="text-sm font-medium truncate">{currentUser.username}</p>
+              <p className="text-xs text-muted-foreground truncate">{currentUser.email}</p>
+            </div>
+          )}
+
+          {/* User Menu */}
           <div className="flex gap-2">
-            <button
-              onClick={() => setSearchOpen(!searchOpen)}
-              className="p-2 hover:bg-gray-100 rounded-full transition"
-              aria-label="Search"
+            <Link
+              href="/profile"
+              className="flex-1 flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-muted transition-colors text-sm"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
+              <User className="w-4 h-4" />
+              <span>Profile</span>
+            </Link>
+            <button
+              onClick={toggleTheme}
+              className="px-3 py-2 hover:bg-muted rounded-lg transition-colors"
+              title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+            >
+              {theme === 'light' ? (
+                <Moon className="w-4 h-4" />
+              ) : (
+                <Sun className="w-4 h-4" />
+              )}
             </button>
             <button
               onClick={handleLogout}
-              className="p-2 hover:bg-gray-100 rounded-full transition"
+              className="px-3 py-2 hover:bg-muted rounded-lg transition-colors"
               aria-label="Logout"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-              </svg>
+              <LogOut className="w-4 h-4" />
             </button>
           </div>
         </div>
 
-        {/* User Info */}
-        {currentUser && (
-          <div className="bg-gray-50 rounded-lg p-3">
-            <p className="text-sm font-medium text-gray-900">{currentUser.username}</p>
-            <p className="text-xs text-gray-600">{currentUser.email}</p>
+        {/* Search Section */}
+        {searchOpen && (
+          <div className="p-4 border-b border-border">
+            <SearchUsers />
           </div>
         )}
+
+        {/* Conversations List */}
+        <div className="flex-1 overflow-y-auto">
+          {conversations.length === 0 ? (
+            <div className="p-4 text-center text-muted-foreground">
+              <p className="text-sm">No conversations yet</p>
+              <p className="text-xs mt-2">Search for users to start chatting</p>
+            </div>
+          ) : (
+            conversations.map((conversation) => (
+              <ConversationItem
+                key={conversation.id}
+                conversation={conversation}
+                onClick={() => setCurrentConversation(conversation)}
+              />
+            ))
+          )}
+        </div>
       </div>
 
-      {/* Search Section */}
-      {searchOpen && (
-        <div className="p-4 border-b border-gray-200">
-          <SearchUsers />
+      {/* Mobile Header */}
+      <div className="sm:hidden fixed top-0 left-0 right-0 z-50 bg-card border-b border-border">
+        <div className="flex items-center justify-between p-4">
+          <h1 className="text-xl font-bold">Chats</h1>
+          <button
+            onClick={() => setMobileOpen(!mobileOpen)}
+            className="p-2 hover:bg-muted rounded-lg"
+          >
+            {mobileOpen ? (
+              <X className="w-6 h-6" />
+            ) : (
+              <Menu className="w-6 h-6" />
+            )}
+          </button>
+        </div>
+      </div>
+
+      {/* Mobile Sidebar */}
+      {mobileOpen && (
+        <div className="sm:hidden fixed inset-0 top-16 z-40 bg-card border-r border-border overflow-y-auto">
+          <div className="p-4 space-y-4">
+            {/* User Info */}
+            {currentUser && (
+              <div className="bg-muted rounded-lg p-3">
+                <p className="text-sm font-medium">{currentUser.username}</p>
+                <p className="text-xs text-muted-foreground">{currentUser.email}</p>
+              </div>
+            )}
+
+            {/* Menu Items */}
+            <div className="flex gap-2">
+              <Link
+                href="/profile"
+                className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg hover:bg-muted transition-colors"
+                onClick={() => setMobileOpen(false)}
+              >
+                <User className="w-4 h-4" />
+                <span>Profile</span>
+              </Link>
+              <button
+                onClick={toggleTheme}
+                className="flex-1 px-3 py-2 hover:bg-muted rounded-lg transition-colors flex items-center justify-center gap-2"
+              >
+                {theme === 'light' ? (
+                  <Moon className="w-4 h-4" />
+                ) : (
+                  <Sun className="w-4 h-4" />
+                )}
+                <span className="text-sm">Theme</span>
+              </button>
+              <button
+                onClick={handleLogout}
+                className="flex-1 px-3 py-2 hover:bg-muted rounded-lg transition-colors flex items-center justify-center gap-2"
+              >
+                <LogOut className="w-4 h-4" />
+                <span className="text-sm">Logout</span>
+              </button>
+            </div>
+
+            {/* Search */}
+            <div className="border-t border-border pt-4">
+              <button
+                onClick={() => setSearchOpen(!searchOpen)}
+                className="w-full px-3 py-2 bg-muted rounded-lg hover:bg-muted/80 transition-colors"
+              >
+                🔍 Search Users
+              </button>
+            </div>
+
+            {/* Search Results */}
+            {searchOpen && (
+              <div className="border-t border-border pt-4">
+                <SearchUsers />
+              </div>
+            )}
+
+            {/* Conversations */}
+            <div className="border-t border-border pt-4">
+              <h2 className="text-sm font-semibold mb-2">Conversations</h2>
+              {conversations.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No conversations yet</p>
+              ) : (
+                conversations.map((conversation) => (
+                  <ConversationItem
+                    key={conversation.id}
+                    conversation={conversation}
+                    onClick={() => {
+                      setCurrentConversation(conversation)
+                      setMobileOpen(false)
+                    }}
+                  />
+                ))
+              )}
+            </div>
+          </div>
         </div>
       )}
-
-      {/* Conversations List */}
-      <div className="flex-1 overflow-y-auto">
-        {conversations.length === 0 ? (
-          <div className="p-4 text-center text-gray-500">
-            <p className="text-sm">No conversations yet</p>
-            <p className="text-xs mt-2">Search for users to start chatting</p>
-          </div>
-        ) : (
-          conversations.map((conversation) => (
-            <ConversationItem
-              key={conversation.id}
-              conversation={conversation}
-              onClick={() => setCurrentConversation(conversation)}
-            />
-          ))
-        )}
-      </div>
-    </div>
+    </>
   )
 }
