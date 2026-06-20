@@ -6,8 +6,9 @@ import { createClient } from '@/lib/supabase/client'
 import { useChatStore } from '@/lib/store/chat-store'
 import { SearchUsers } from './search-users'
 import { ConversationItem } from './conversation-item'
+import { GroupCreationDialog } from './group-creation-dialog'
 import { useTheme } from '@/lib/providers/theme-provider'
-import { Menu, X, LogOut, Settings, User, Moon, Sun } from 'lucide-react'
+import { Menu, X, LogOut, Plus, User, Moon, Sun } from 'lucide-react'
 import Link from 'next/link'
 
 export function Sidebar() {
@@ -16,6 +17,7 @@ export function Sidebar() {
   const router = useRouter()
   const [searchOpen, setSearchOpen] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [groupDialogOpen, setGroupDialogOpen] = useState(false)
   const supabase = createClient()
 
   useEffect(() => {
@@ -70,6 +72,13 @@ export function Sidebar() {
 
           {/* User Menu */}
           <div className="flex gap-2">
+            <button
+              onClick={() => setGroupDialogOpen(true)}
+              className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg hover:bg-muted transition-colors text-sm"
+              title="Create group chat"
+            >
+              <Plus className="w-4 h-4" />
+            </button>
             <Link
               href="/profile"
               className="flex-1 flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-muted transition-colors text-sm"
@@ -155,6 +164,16 @@ export function Sidebar() {
 
             {/* Menu Items */}
             <div className="flex gap-2">
+              <button
+                onClick={() => {
+                  setGroupDialogOpen(true)
+                  setMobileOpen(false)
+                }}
+                className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg hover:bg-muted transition-colors"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Group</span>
+              </button>
               <Link
                 href="/profile"
                 className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg hover:bg-muted transition-colors"
@@ -221,6 +240,12 @@ export function Sidebar() {
           </div>
         </div>
       )}
+
+      {/* Group Creation Dialog */}
+      <GroupCreationDialog
+        isOpen={groupDialogOpen}
+        onClose={() => setGroupDialogOpen(false)}
+      />
     </>
   )
 }

@@ -39,6 +39,7 @@ export function ProfileForm() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
+  const [stats, setStats] = useState({ followers: 0, following: 0 })
 
   // Form states
   const [formData, setFormData] = useState({
@@ -75,6 +76,22 @@ export function ProfileForm() {
         if (userData.avatar_url) {
           setAvatarPreview(userData.avatar_url)
         }
+
+        // Fetch followers and following counts
+        const { count: followersCount } = await supabase
+          .from('follows')
+          .select('*', { count: 'exact' })
+          .eq('following_id', user.id)
+
+        const { count: followingCount } = await supabase
+          .from('follows')
+          .select('*', { count: 'exact' })
+          .eq('follower_id', user.id)
+
+        setStats({
+          followers: followersCount || 0,
+          following: followingCount || 0,
+        })
       }
     } catch (error) {
       console.error('Error fetching profile:', error)
@@ -246,6 +263,21 @@ export function ProfileForm() {
                       Cancel
                     </button>
                   )}
+                </div>
+              </div>
+            </div>
+
+            {/* Stats Section */}
+            <div>
+              <h2 className="text-lg font-semibold mb-4">Profile Stats</h2>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-muted rounded-lg p-4 text-center">
+                  <p className="text-3xl font-bold text-primary">{stats.followers}</p>
+                  <p className="text-sm text-muted-foreground mt-1">Followers</p>
+                </div>
+                <div className="bg-muted rounded-lg p-4 text-center">
+                  <p className="text-3xl font-bold text-primary">{stats.following}</p>
+                  <p className="text-sm text-muted-foreground mt-1">Following</p>
                 </div>
               </div>
             </div>

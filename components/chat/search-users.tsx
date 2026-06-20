@@ -1,13 +1,16 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { useChatStore } from '@/lib/store/chat-store'
+import { MessageCircle, User } from 'lucide-react'
 
 export function SearchUsers() {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
+  const router = useRouter()
   const supabase = createClient()
   const { currentUser, addConversation, setCurrentConversation } = useChatStore()
 
@@ -28,7 +31,8 @@ export function SearchUsers() {
         .or(`username.ilike.%${value}%,email.ilike.%${value}%`)
         .limit(10)
 
-      setResults(data || [])
+      // Filter out current user
+      setResults((data || []).filter(user => user.id !== currentUser?.id))
     } catch (error) {
       console.error('Search error:', error)
     } finally {
@@ -36,7 +40,13 @@ export function SearchUsers() {
     }
   }
 
-  const handleSelectUser = async (selectedUser: any) => {
+  const handleViewProfile = (userId: string) => {
+    router.push(`/user/${userId}`)
+    setQuery('')
+    setResults([])
+  }
+
+  const handleMessage = async (selectedUser: any) => {
     if (!currentUser) return
 
     try {
@@ -79,7 +89,7 @@ export function SearchUsers() {
           id: conversationId,
           conversation_type: 'direct' as const,
           created_at: new Date().toISOString(),
-          participants: [currentUser, selectedUser],
+          participants: [selectedUser],
         }
         addConversation(newConversation)
       }
@@ -97,24 +107,40 @@ export function SearchUsers() {
         type="text"
         value={query}
         onChange={handleSearch}
-        placeholder="Search by username or email..."
-        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
+        placeholder="Search by name or email..."
+        className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
       />
 
       {loading && (
-        <div className="text-sm text-gray-500 text-center py-2">Searching...</div>
+        <div className="text-sm text-muted-foreground text-center py-2">Searching...</div>
       )}
 
-      <div className="max-h-64 overflow-y-auto">
+      <div className="max-h-64 overflow-y-auto space-y-1">
+        {results.length === 0 && query.length >= 2 && !loading && (
+          <div className="text-sm text-muted-foreground text-center py-3">
+            No users found
+          </div>
+        )}
         {results.map((user) => (
-          <button
+          <div
             key={user.id}
-            onClick={() => handleSelectUser(user)}
-            className="w-full text-left p-3 hover:bg-indigo-50 rounded transition"
+            className="flex items-center justify-between p-2 rounded-lg hover:bg-muted transition-colors group"
           >
-            <p className="font-medium text-sm text-gray-900">{user.username}</p>
-            <p className="text-xs text-gray-600">{user.email}</p>
-          </button>
+            <button
+              onClick={() => handleViewProfile(user.id)}
+              className="flex-1 text-left"
+            >
+              <p className="font-medium text-sm">{user.username}</p>
+              <p className="text-xs text-muted-foreground">{user.email}</p>
+            </button>
+            <button
+              onClick={() => handleMessage(user)}
+              className="p-2 hover:bg-primary/10 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+              title="Message"
+            >
+              <MessageCircle className="w-4 h-4 text-primary" />
+            </button>
+          </div>
         ))}
       </div>
     </div>
