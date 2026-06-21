@@ -43,10 +43,6 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     })
   }
 
-  if (!mounted) {
-    return <>{children}</>
-  }
-
   return (
     <ThemeContext.Provider value={{ theme, toggleTheme }}>
       {children}
@@ -57,7 +53,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 export function useTheme() {
   const context = useContext(ThemeContext)
   if (!context) {
-    throw new Error('useTheme must be used within ThemeProvider')
+    // Return default theme during SSR/hydration mismatch
+    return {
+      theme: 'light' as const,
+      toggleTheme: () => {},
+    }
   }
   return context
 }
