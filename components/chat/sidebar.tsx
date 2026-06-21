@@ -13,24 +13,12 @@ import Link from 'next/link'
 
 export function Sidebar() {
   const { conversations, currentUser, setCurrentConversation } = useChatStore()
-  const [themeContext, setThemeContext] = useState<any>(null)
+  const { theme, toggleTheme } = useTheme()
   const router = useRouter()
   const [searchOpen, setSearchOpen] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const [groupDialogOpen, setGroupDialogOpen] = useState(false)
   const supabase = createClient()
-
-  useEffect(() => {
-    try {
-      const context = useTheme()
-      setThemeContext(context)
-    } catch (e) {
-      // Theme not available
-    }
-  }, [])
-
-  const theme = themeContext?.theme
-  const toggleTheme = themeContext?.toggleTheme
 
   const handleLogout = async () => {
     try {
