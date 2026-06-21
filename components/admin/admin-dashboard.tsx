@@ -61,34 +61,51 @@ export function AdminDashboard() {
   }, [])
 
   const checkAdminAndFetchData = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) {
-        router.push('/auth/login')
-        return
-      }
+    let retries = 0
+    const maxRetries = 3
 
-      // Check if user is admin
-      const { data: userData } = await supabase
-        .from('profiles')
-        .select('is_admin')
-        .eq('id', user.id)
-        .single()
+    const attemptCheck = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) {
+          if (retries < maxRetries) {
+            retries++
+            await new Promise(resolve => setTimeout(resolve, 500))
+            return attemptCheck()
+          }
+          router.push('/auth/login')
+          return
+        }
 
-      if (!userData?.is_admin) {
+        // Check if user is admin
+        const { data: userData } = await supabase
+          .from('profiles')
+          .select('is_admin')
+          .eq('id', user.id)
+          .single()
+
+        if (!userData?.is_admin) {
+          router.push('/chat')
+          return
+        }
+
+        setIsAdmin(true)
+        await fetchStatistics()
+        await fetchUsers()
+      } catch (error) {
+        if (retries < maxRetries) {
+          retries++
+          await new Promise(resolve => setTimeout(resolve, 500))
+          return attemptCheck()
+        }
+        console.error('Error checking admin status:', error)
         router.push('/chat')
-        return
+      } finally {
+        setLoading(false)
       }
-
-      setIsAdmin(true)
-      await fetchStatistics()
-      await fetchUsers()
-    } catch (error) {
-      console.error('Error checking admin status:', error)
-      router.push('/chat')
-    } finally {
-      setLoading(false)
     }
+
+    await attemptCheck()
   }
 
   const fetchStatistics = async () => {

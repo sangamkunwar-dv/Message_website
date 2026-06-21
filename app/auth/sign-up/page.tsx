@@ -81,22 +81,26 @@ export default function SignUp() {
 
       if (signUpError) throw signUpError
 
-      // If admin signup, automatically confirm and redirect to admin panel
+      // If admin signup, redirect to admin sign-up success (which will then auto-redirect to admin)
       if (isAdmin && data.user) {
-        try {
-          // Admin users skip email verification and go directly to admin panel
-          await supabase.auth.refreshSession()
-          router.push('/admin')
-        } catch (adminErr) {
-          console.error('Admin redirect error:', adminErr)
-          router.push('/auth/sign-up-success')
-        }
+        router.push('/auth/admin-signup-success')
       } else {
         // Regular users need to verify email
         router.push('/auth/sign-up-success')
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred')
+      let errorMessage = err instanceof Error ? err.message : 'An error occurred'
+      
+      // Provide helpful error messages
+      if (errorMessage.includes('rate limit')) {
+        errorMessage = 'Too many signup attempts. Please wait a few minutes and try again with a different email address, or use Google/Facebook signup instead.'
+      } else if (errorMessage.includes('already')) {
+        errorMessage = 'This email is already registered. Please log in instead.'
+      } else if (errorMessage.includes('invalid')) {
+        errorMessage = 'Please enter a valid email address.'
+      }
+      
+      setError(errorMessage)
     } finally {
       setLoading(false)
     }
