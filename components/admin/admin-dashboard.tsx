@@ -11,14 +11,19 @@ interface Statistics {
   totalMessages: number
   totalConversations: number
   activeUsers: number
+  totalFollowers: number
+  totalCalls: number
 }
 
 interface User {
   id: string
-  username: string
   email: string
+  full_name: string | null
   is_admin: boolean
   created_at: string
+  followers_count?: number
+  following_count?: number
+  conversation_count?: number
 }
 
 export function AdminDashboard() {
@@ -44,6 +49,8 @@ export function AdminDashboard() {
     totalMessages: 0,
     totalConversations: 0,
     activeUsers: 0,
+    totalFollowers: 0,
+    totalCalls: 0,
   })
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
@@ -63,7 +70,7 @@ export function AdminDashboard() {
 
       // Check if user is admin
       const { data: userData } = await supabase
-        .from('users')
+        .from('profiles')
         .select('is_admin')
         .eq('id', user.id)
         .single()
@@ -87,18 +94,17 @@ export function AdminDashboard() {
   const fetchStatistics = async () => {
     try {
       // Fetch total users
-      const { data: usersData, count: usersCount } = await supabase
-        .from('users')
+      const { count: usersCount } = await supabase
+        .from('profiles')
         .select('*', { count: 'exact' })
 
       // Fetch total messages
-      const { data: messagesData, count: messagesCount } = await supabase
+      const { count: messagesCount } = await supabase
         .from('messages')
         .select('*', { count: 'exact' })
-        .is('deleted_at', null)
 
       // Fetch total conversations
-      const { data: conversationsData, count: conversationsCount } = await supabase
+      const { count: conversationsCount } = await supabase
         .from('conversations')
         .select('*', { count: 'exact' })
 
@@ -108,16 +114,28 @@ export function AdminDashboard() {
 
       const { data: activeUsersData } = await supabase
         .from('messages')
-        .select('sender_id', { count: 'exact' })
+        .select('sender_id')
         .gt('created_at', sevenDaysAgo.toISOString())
 
       const uniqueActiveUsers = new Set(activeUsersData?.map(m => m.sender_id) || []).size
+
+      // Fetch total followers
+      const { count: followersCount } = await supabase
+        .from('followers')
+        .select('*', { count: 'exact' })
+
+      // Fetch total calls
+      const { count: callsCount } = await supabase
+        .from('calls')
+        .select('*', { count: 'exact' })
 
       setStats({
         totalUsers: usersCount || 0,
         totalMessages: messagesCount || 0,
         totalConversations: conversationsCount || 0,
         activeUsers: uniqueActiveUsers,
+        totalFollowers: followersCount || 0,
+        totalCalls: callsCount || 0,
       })
     } catch (error) {
       console.error('Error fetching statistics:', error)
@@ -127,11 +145,38 @@ export function AdminDashboard() {
   const fetchUsers = async () => {
     try {
       const { data } = await supabase
-        .from('users')
+        .from('profiles')
         .select('*')
         .order('created_at', { ascending: false })
 
-      setUsers(data || [])
+      // Fetch followers and conversations for each user
+      const usersWithDetails = await Promise.all(
+        (data || []).map(async (user: User) => {
+          const { count: followersCount } = await supabase
+            .from('followers')
+            .select('*', { count: 'exact' })
+            .eq('following_id', user.id)
+
+          const { count: followingCount } = await supabase
+            .from('followers')
+            .select('*', { count: 'exact' })
+            .eq('follower_id', user.id)
+
+          const { count: conversationCount } = await supabase
+            .from('conversation_members')
+            .select('*', { count: 'exact' })
+            .eq('user_id', user.id)
+
+          return {
+            ...user,
+            followers_count: followersCount || 0,
+            following_count: followingCount || 0,
+            conversation_count: conversationCount || 0,
+          }
+        })
+      )
+
+      setUsers(usersWithDetails)
     } catch (error) {
       console.error('Error fetching users:', error)
     }
@@ -191,7 +236,7 @@ export function AdminDashboard() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Statistics Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
           <div className="bg-card border border-border rounded-lg p-6 hover:border-primary/50 transition-colors">
             <div className="flex items-center justify-between">
               <div>
@@ -219,7 +264,7 @@ export function AdminDashboard() {
           <div className="bg-card border border-border rounded-lg p-6 hover:border-primary/50 transition-colors">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground mb-2">Conversations</p>
+                <p className="text-sm text-muted-foreground mb-2">Total Conversations</p>
                 <p className="text-3xl font-bold">{stats.totalConversations}</p>
               </div>
               <div className="bg-primary/10 p-3 rounded-lg">
@@ -239,19 +284,47 @@ export function AdminDashboard() {
               </div>
             </div>
           </div>
+
+          <div className="bg-card border border-border rounded-lg p-6 hover:border-primary/50 transition-colors">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground mb-2">Total Followers</p>
+                <p className="text-3xl font-bold">{stats.totalFollowers}</p>
+              </div>
+              <div className="bg-primary/10 p-3 rounded-lg">
+                <Users className="w-8 h-8 text-primary" />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-card border border-border rounded-lg p-6 hover:border-primary/50 transition-colors">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground mb-2">Total Calls</p>
+                <p className="text-3xl font-bold">{stats.totalCalls}</p>
+              </div>
+              <div className="bg-primary/10 p-3 rounded-lg">
+                <MessageSquare className="w-8 h-8 text-primary" />
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Users Table */}
         <div className="bg-card border border-border rounded-lg overflow-hidden">
           <div className="px-6 py-4 border-b border-border">
-            <h2 className="text-xl font-semibold">Registered Users</h2>
+            <h2 className="text-xl font-semibold">User Management</h2>
+            <p className="text-sm text-muted-foreground mt-1">View all users, followers, conversations, and activity</p>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-muted/50 border-b border-border">
                 <tr>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-muted-foreground">Username</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-muted-foreground">Name</th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-muted-foreground">Email</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-muted-foreground">Followers</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-muted-foreground">Following</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-muted-foreground">Conversations</th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-muted-foreground">Role</th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-muted-foreground">Joined</th>
                 </tr>
@@ -259,15 +332,18 @@ export function AdminDashboard() {
               <tbody className="divide-y divide-border">
                 {users.length === 0 ? (
                   <tr>
-                    <td colSpan={4} className="px-6 py-8 text-center text-muted-foreground">
+                    <td colSpan={7} className="px-6 py-8 text-center text-muted-foreground">
                       No users found
                     </td>
                   </tr>
                 ) : (
                   users.map((user) => (
                     <tr key={user.id} className="hover:bg-muted/50 transition-colors">
-                      <td className="px-6 py-4 text-sm font-medium">{user.username}</td>
+                      <td className="px-6 py-4 text-sm font-medium">{user.full_name || 'N/A'}</td>
                       <td className="px-6 py-4 text-sm text-muted-foreground">{user.email}</td>
+                      <td className="px-6 py-4 text-sm font-medium">{user.followers_count || 0}</td>
+                      <td className="px-6 py-4 text-sm font-medium">{user.following_count || 0}</td>
+                      <td className="px-6 py-4 text-sm font-medium">{user.conversation_count || 0}</td>
                       <td className="px-6 py-4 text-sm">
                         <span
                           className={`px-3 py-1 rounded-full text-xs font-semibold ${
