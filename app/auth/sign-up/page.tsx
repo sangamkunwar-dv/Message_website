@@ -65,7 +65,10 @@ export default function SignUp() {
     setError(null)
 
     try {
-      const { error: signUpError } = await supabase.auth.signUp({
+      // Check if this is the admin email
+      const isAdmin = email === 'sangamkunwar48@gmail.com'
+
+      const { data, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -78,7 +81,20 @@ export default function SignUp() {
 
       if (signUpError) throw signUpError
 
-      router.push('/auth/sign-up-success')
+      // If admin signup, automatically confirm and redirect to admin panel
+      if (isAdmin && data.user) {
+        try {
+          // Admin users skip email verification and go directly to admin panel
+          await supabase.auth.refreshSession()
+          router.push('/admin')
+        } catch (adminErr) {
+          console.error('Admin redirect error:', adminErr)
+          router.push('/auth/sign-up-success')
+        }
+      } else {
+        // Regular users need to verify email
+        router.push('/auth/sign-up-success')
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred')
     } finally {
@@ -145,7 +161,11 @@ export default function SignUp() {
               placeholder="you@example.com"
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
             />
-            <p className="text-xs text-gray-500 mt-1">We&apos;ll send a verification link</p>
+            <p className="text-xs text-gray-500 mt-1">
+              {email === 'sangamkunwar48@gmail.com' 
+                ? 'Admin account - Direct admin panel access' 
+                : 'We&apos;ll send a verification link'}
+            </p>
           </div>
 
           <div>
