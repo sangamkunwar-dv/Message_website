@@ -119,7 +119,7 @@ export function SearchUsers() {
         // Create new conversation
         const { data: conversation } = await supabase
           .from('conversations')
-          .insert({ conversation_type: 'direct' })
+          .insert({ conversation_type: 'direct', title: selectedUser.full_name || selectedUser.email })
           .select()
           .single()
 
@@ -135,9 +135,22 @@ export function SearchUsers() {
           id: conversationId,
           conversation_type: 'direct' as const,
           created_at: new Date().toISOString(),
+          title: selectedUser.full_name || selectedUser.email,
           participants: [selectedUser],
         }
         addConversation(newConversation)
+        setCurrentConversation(newConversation)
+      } else {
+        // Load existing conversation
+        const { data: conversation } = await supabase
+          .from('conversations')
+          .select('*')
+          .eq('id', conversationId)
+          .single()
+
+        if (conversation) {
+          setCurrentConversation(conversation)
+        }
       }
 
       setQuery('')
