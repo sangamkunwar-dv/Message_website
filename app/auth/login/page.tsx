@@ -40,8 +40,14 @@ export default function Login() {
         throw loginError
       }
 
-      // Redirect to chat after successful login
-      router.push('/chat')
+      // Check if this is the admin email and redirect accordingly
+      const isAdmin = email === 'sangamkunwar48@gmail.com'
+      
+      if (isAdmin) {
+        router.push('/admin')
+      } else {
+        router.push('/chat')
+      }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'An error occurred'
       setError(errorMessage)

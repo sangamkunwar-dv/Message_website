@@ -211,17 +211,17 @@ export default function Home() {
               <h4 className="font-semibold">Company</h4>
               <ul className="space-y-2 text-sm text-muted-foreground">
                 <li>
-                  <Link href="#" className="hover:text-foreground transition-colors">
+                  <Link href="/about" className="hover:text-foreground transition-colors">
                     About
                   </Link>
                 </li>
                 <li>
-                  <Link href="#" className="hover:text-foreground transition-colors">
+                  <Link href="/about" className="hover:text-foreground transition-colors">
                     Blog
                   </Link>
                 </li>
                 <li>
-                  <Link href="#" className="hover:text-foreground transition-colors">
+                  <Link href="/contact" className="hover:text-foreground transition-colors">
                     Contact
                   </Link>
                 </li>
@@ -233,17 +233,17 @@ export default function Home() {
               <h4 className="font-semibold">Legal</h4>
               <ul className="space-y-2 text-sm text-muted-foreground">
                 <li>
-                  <Link href="#" className="hover:text-foreground transition-colors">
+                  <Link href="/privacy" className="hover:text-foreground transition-colors">
                     Privacy Policy
                   </Link>
                 </li>
                 <li>
-                  <Link href="#" className="hover:text-foreground transition-colors">
+                  <Link href="/terms" className="hover:text-foreground transition-colors">
                     Terms of Service
                   </Link>
                 </li>
                 <li>
-                  <Link href="#" className="hover:text-foreground transition-colors">
+                  <Link href="/privacy" className="hover:text-foreground transition-colors">
                     Cookie Policy
                   </Link>
                 </li>
