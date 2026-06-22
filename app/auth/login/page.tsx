@@ -76,15 +76,17 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg shadow-xl p-8 w-full max-w-md">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome Back</h1>
-        <p className="text-gray-600 mb-6">Log in to your chat account</p>
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="bg-card rounded-2xl shadow-2xl p-8 w-full max-w-md border border-border">
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold text-foreground mb-2">Welcome Back</h1>
+          <p className="text-muted-foreground">Log in to your chat account</p>
+        </div>
 
-        <form onSubmit={handleLogin} className="space-y-4">
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-              Email
+        <form onSubmit={handleLogin} className="space-y-5">
+          <div className="space-y-2">
+            <label htmlFor="email" className="block text-sm font-semibold text-foreground">
+              Email Address
             </label>
             <input
               id="email"
@@ -94,12 +96,12 @@ export default function Login() {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
               required
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              className="w-full px-4 py-3 bg-background border border-border rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200 text-foreground placeholder:text-muted-foreground outline-none"
             />
           </div>
 
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+          <div className="space-y-2">
+            <label htmlFor="password" className="block text-sm font-semibold text-foreground">
               Password
             </label>
             <input
@@ -107,39 +109,50 @@ export default function Login() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
+              placeholder="Enter your password"
               required
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              className="w-full px-4 py-3 bg-background border border-border rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200 text-foreground placeholder:text-muted-foreground outline-none"
             />
           </div>
 
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded text-sm">
+            <div className="bg-destructive/10 border border-destructive/30 text-destructive px-4 py-3 rounded-xl text-sm font-medium animate-in fade-in">
               {error}
             </div>
           )}
 
-          <Button type="submit" disabled={loading} className="w-full">
-            {loading ? 'Logging in...' : 'Log In'}
+          <Button 
+            type="submit" 
+            disabled={loading} 
+            className="w-full py-3 font-semibold rounded-xl text-base transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {loading ? (
+              <span className="flex items-center justify-center gap-2">
+                <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-r-transparent" />
+                Logging in...
+              </span>
+            ) : (
+              'Log In'
+            )}
           </Button>
 
           <div className="text-center">
             <Link 
               href="/auth/forgot-password" 
-              className="text-indigo-600 hover:underline font-medium text-sm"
+              className="text-primary hover:underline font-medium text-sm transition-colors"
             >
               Forgot password?
             </Link>
           </div>
         </form>
 
-        <div className="border-t pt-6 mt-6 space-y-4">
-          <p className="text-center text-gray-600 text-sm font-medium mb-3">Or continue with</p>
+        <div className="border-t border-border pt-6 mt-6 space-y-4">
+          <p className="text-center text-muted-foreground text-sm font-medium">Or continue with</p>
           
           <button
             onClick={() => handleOAuth('google')}
             disabled={oauthLoading === 'google'}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+            className="w-full px-4 py-3 border border-border rounded-xl hover:bg-muted transition-colors flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed font-medium text-foreground hover:border-primary/50 duration-200"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -153,7 +166,7 @@ export default function Login() {
           <button
             onClick={() => handleOAuth('facebook')}
             disabled={oauthLoading === 'facebook'}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+            className="w-full px-4 py-3 border border-border rounded-xl hover:bg-muted transition-colors flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed font-medium text-foreground hover:border-primary/50 duration-200"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
               <path fill="#1877F2" d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
@@ -161,9 +174,9 @@ export default function Login() {
             {oauthLoading === 'facebook' ? 'Signing in...' : 'Facebook'}
           </button>
 
-          <p className="text-center text-gray-600 text-sm">
+          <p className="text-center text-muted-foreground text-sm">
             Don&apos;t have an account?{' '}
-            <Link href="/auth/sign-up" className="text-indigo-600 hover:underline font-medium">
+            <Link href="/auth/sign-up" className="text-primary hover:underline font-semibold transition-colors">
               Sign up
             </Link>
           </p>

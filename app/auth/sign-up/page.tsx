@@ -131,14 +131,16 @@ export default function SignUp() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg shadow-xl p-8 w-full max-w-md max-h-screen overflow-y-auto">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Create Account</h1>
-        <p className="text-gray-600 mb-6">Join our chat community</p>
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="bg-card rounded-2xl shadow-2xl p-8 w-full max-w-md max-h-screen overflow-y-auto border border-border">
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold text-foreground mb-2">Create Account</h1>
+          <p className="text-muted-foreground">Join our chat community</p>
+        </div>
 
-        <form onSubmit={handleSignUp} className="space-y-4">
-          <div>
-            <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-2">
+        <form onSubmit={handleSignUp} className="space-y-5">
+          <div className="space-y-2">
+            <label htmlFor="username" className="block text-sm font-semibold text-foreground">
               Username
             </label>
             <input
@@ -147,13 +149,13 @@ export default function SignUp() {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               placeholder="your_username"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              className="w-full px-4 py-3 bg-background border border-border rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200 text-foreground placeholder:text-muted-foreground outline-none"
             />
-            <p className="text-xs text-gray-500 mt-1">Min 3 characters</p>
+            <p className="text-xs text-muted-foreground">Minimum 3 characters</p>
           </div>
 
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+          <div className="space-y-2">
+            <label htmlFor="email" className="block text-sm font-semibold text-foreground">
               Email Address
             </label>
             <input
@@ -163,17 +165,17 @@ export default function SignUp() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              className="w-full px-4 py-3 bg-background border border-border rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200 text-foreground placeholder:text-muted-foreground outline-none"
             />
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-muted-foreground">
               {email === 'sangamkunwar48@gmail.com' 
                 ? 'Admin account - Direct admin panel access' 
                 : 'We&apos;ll send a verification link'}
             </p>
           </div>
 
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+          <div className="space-y-2">
+            <label htmlFor="password" className="block text-sm font-semibold text-foreground">
               Password
             </label>
             <input
@@ -181,14 +183,14 @@ export default function SignUp() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              placeholder="Create a strong password"
+              className="w-full px-4 py-3 bg-background border border-border rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200 text-foreground placeholder:text-muted-foreground outline-none"
             />
-            <p className="text-xs text-gray-500 mt-1">Min 8 characters</p>
+            <p className="text-xs text-muted-foreground">Minimum 8 characters</p>
           </div>
 
-          <div>
-            <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
+          <div className="space-y-2">
+            <label htmlFor="confirmPassword" className="block text-sm font-semibold text-foreground">
               Confirm Password
             </label>
             <input
@@ -196,27 +198,27 @@ export default function SignUp() {
               type="password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder="••••••••"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              placeholder="Re-enter your password"
+              className="w-full px-4 py-3 bg-background border border-border rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200 text-foreground placeholder:text-muted-foreground outline-none"
             />
           </div>
 
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="bg-primary/5 border border-primary/20 rounded-xl p-4">
             <div className="flex items-start gap-3">
               <input
                 id="agreeTerms"
                 type="checkbox"
                 checked={agreeTerms}
                 onChange={(e) => setAgreeTerms(e.target.checked)}
-                className="mt-1 w-4 h-4 cursor-pointer"
+                className="mt-1 w-4 h-4 cursor-pointer accent-primary"
               />
               <div className="flex-1">
-                <label htmlFor="agreeTerms" className="text-sm text-gray-700 cursor-pointer">
+                <label htmlFor="agreeTerms" className="text-sm text-foreground cursor-pointer">
                   I agree to the{' '}
                   <button
                     type="button"
                     onClick={() => setShowTerms(true)}
-                    className="text-indigo-600 hover:underline font-medium"
+                    className="text-primary hover:underline font-semibold transition-colors"
                   >
                     Terms & Conditions
                   </button>
@@ -226,23 +228,34 @@ export default function SignUp() {
           </div>
 
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded text-sm">
+            <div className="bg-destructive/10 border border-destructive/30 text-destructive px-4 py-3 rounded-xl text-sm font-medium animate-in fade-in">
               {error}
             </div>
           )}
 
-          <Button type="submit" disabled={loading || !agreeTerms} className="w-full">
-            {loading ? 'Creating account...' : 'Sign Up'}
+          <Button 
+            type="submit" 
+            disabled={loading || !agreeTerms} 
+            className="w-full py-3 font-semibold rounded-xl text-base transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {loading ? (
+              <span className="flex items-center justify-center gap-2">
+                <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-r-transparent" />
+                Creating account...
+              </span>
+            ) : (
+              'Sign Up'
+            )}
           </Button>
         </form>
 
-        <div className="border-t pt-6 mt-6 space-y-4">
-          <p className="text-center text-gray-600 text-sm font-medium mb-3">Or sign up with</p>
+        <div className="border-t border-border pt-6 mt-6 space-y-4">
+          <p className="text-center text-muted-foreground text-sm font-medium">Or sign up with</p>
           
           <button
             onClick={() => handleOAuth('google')}
             disabled={oauthLoading === 'google'}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+            className="w-full px-4 py-3 border border-border rounded-xl hover:bg-muted transition-colors flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed font-medium text-foreground hover:border-primary/50 duration-200"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -256,7 +269,7 @@ export default function SignUp() {
           <button
             onClick={() => handleOAuth('facebook')}
             disabled={oauthLoading === 'facebook'}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+            className="w-full px-4 py-3 border border-border rounded-xl hover:bg-muted transition-colors flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed font-medium text-foreground hover:border-primary/50 duration-200"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
               <path fill="#1877F2" d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
@@ -264,9 +277,9 @@ export default function SignUp() {
             {oauthLoading === 'facebook' ? 'Signing up...' : 'Facebook'}
           </button>
 
-          <p className="text-center text-gray-600 text-sm">
+          <p className="text-center text-muted-foreground text-sm">
             Already have an account?{' '}
-            <Link href="/auth/login" className="text-indigo-600 hover:underline font-medium">
+            <Link href="/auth/login" className="text-primary hover:underline font-semibold transition-colors">
               Log in
             </Link>
           </p>
