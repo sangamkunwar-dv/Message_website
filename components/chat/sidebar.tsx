@@ -7,30 +7,17 @@ import { useChatStore } from '@/lib/store/chat-store'
 import { SearchUsers } from './search-users'
 import { ConversationItem } from './conversation-item'
 import { GroupCreationDialog } from './group-creation-dialog'
-import { useTheme } from '@/lib/providers/theme-provider'
-import { Menu, X, LogOut, Plus, User, Moon, Sun } from 'lucide-react'
+import { ThemeToggle } from '@/components/theme-toggle'
+import { Menu, X, LogOut, Plus, User } from 'lucide-react'
 import Link from 'next/link'
 
 export function Sidebar() {
   const { conversations, currentUser, setCurrentConversation } = useChatStore()
-  const [themeContext, setThemeContext] = useState<any>(null)
   const router = useRouter()
   const [searchOpen, setSearchOpen] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const [groupDialogOpen, setGroupDialogOpen] = useState(false)
   const supabase = createClient()
-
-  useEffect(() => {
-    try {
-      const context = useTheme()
-      setThemeContext(context)
-    } catch (e) {
-      // Theme not available
-    }
-  }, [])
-
-  const theme = themeContext?.theme
-  const toggleTheme = themeContext?.toggleTheme
 
   const handleLogout = async () => {
     try {
@@ -59,6 +46,7 @@ export function Sidebar() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
               </button>
+              <ThemeToggle />
             </div>
           </div>
 
@@ -86,17 +74,7 @@ export function Sidebar() {
               <User className="w-4 h-4" />
               <span>Profile</span>
             </Link>
-            <button
-              onClick={toggleTheme}
-              className="px-3 py-2 hover:bg-muted rounded-lg transition-colors"
-              title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
-            >
-              {theme === 'light' ? (
-                <Moon className="w-4 h-4" />
-              ) : (
-                <Sun className="w-4 h-4" />
-              )}
-            </button>
+            <ThemeToggle />
             <button
               onClick={handleLogout}
               className="px-3 py-2 hover:bg-muted rounded-lg transition-colors"
@@ -182,17 +160,10 @@ export function Sidebar() {
                 <User className="w-4 h-4" />
                 <span>Profile</span>
               </Link>
-              <button
-                onClick={toggleTheme}
-                className="flex-1 px-3 py-2 hover:bg-muted rounded-lg transition-colors flex items-center justify-center gap-2"
-              >
-                {theme === 'light' ? (
-                  <Moon className="w-4 h-4" />
-                ) : (
-                  <Sun className="w-4 h-4" />
-                )}
+              <div className="flex-1 px-3 py-2 rounded-lg flex items-center justify-center gap-2">
+                <ThemeToggle />
                 <span className="text-sm">Theme</span>
-              </button>
+              </div>
               <button
                 onClick={handleLogout}
                 className="flex-1 px-3 py-2 hover:bg-muted rounded-lg transition-colors flex items-center justify-center gap-2"

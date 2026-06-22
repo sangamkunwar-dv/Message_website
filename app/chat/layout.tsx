@@ -27,7 +27,7 @@ export default function ChatLayout({
 
         // Fetch user profile
         const { data: userProfile } = await supabase
-          .from('users')
+          .from('profiles')
           .select('*')
           .eq('id', user.id)
           .single()

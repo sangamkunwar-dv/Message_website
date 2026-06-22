@@ -26,15 +26,16 @@ export function SearchUsers() {
     setLoading(true)
     try {
       const { data } = await supabase
-        .from('users')
+        .from('profiles')
         .select('*')
-        .or(`username.ilike.%${value}%,email.ilike.%${value}%`)
+        .or(`full_name.ilike.%${value}%,email.ilike.%${value}%`)
         .limit(10)
 
       // Filter out current user
       setResults((data || []).filter(user => user.id !== currentUser?.id))
     } catch (error) {
       console.error('Search error:', error)
+      setResults([])
     } finally {
       setLoading(false)
     }
@@ -130,7 +131,7 @@ export function SearchUsers() {
               onClick={() => handleViewProfile(user.id)}
               className="flex-1 text-left"
             >
-              <p className="font-medium text-sm">{user.username}</p>
+              <p className="font-medium text-sm">{user.full_name || 'User'}</p>
               <p className="text-xs text-muted-foreground">{user.email}</p>
             </button>
             <button
