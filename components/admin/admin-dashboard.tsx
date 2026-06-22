@@ -18,8 +18,8 @@ interface Statistics {
 interface User {
   id: string
   email: string
-  full_name: string | null
-  is_admin: boolean
+  username: string
+  avatar_url?: string
   created_at: string
   followers_count?: number
   following_count?: number
@@ -77,14 +77,10 @@ export function AdminDashboard() {
           return
         }
 
-        // Check if user is admin
-        const { data: userData } = await supabase
-          .from('profiles')
-          .select('is_admin')
-          .eq('id', user.id)
-          .single()
+        // Check if user is admin by email
+        const isAdminUser = user.email === 'sangamkunwar48@gmail.com'
 
-        if (!userData?.is_admin) {
+        if (!isAdminUser) {
           router.push('/chat')
           return
         }
@@ -112,7 +108,7 @@ export function AdminDashboard() {
     try {
       // Fetch total users
       const { count: usersCount } = await supabase
-        .from('profiles')
+        .from('users')
         .select('*', { count: 'exact' })
 
       // Fetch total messages
@@ -136,15 +132,16 @@ export function AdminDashboard() {
 
       const uniqueActiveUsers = new Set(activeUsersData?.map(m => m.sender_id) || []).size
 
-      // Fetch total followers
+      // Fetch total followers (follows table)
       const { count: followersCount } = await supabase
-        .from('followers')
+        .from('follows')
         .select('*', { count: 'exact' })
 
-      // Fetch total calls
+      // Fetch total conversations
       const { count: callsCount } = await supabase
-        .from('calls')
+        .from('conversations')
         .select('*', { count: 'exact' })
+        .eq('conversation_type', 'call')
 
       setStats({
         totalUsers: usersCount || 0,
@@ -162,7 +159,7 @@ export function AdminDashboard() {
   const fetchUsers = async () => {
     try {
       const { data } = await supabase
-        .from('profiles')
+        .from('users')
         .select('*')
         .order('created_at', { ascending: false })
 
@@ -170,17 +167,17 @@ export function AdminDashboard() {
       const usersWithDetails = await Promise.all(
         (data || []).map(async (user: User) => {
           const { count: followersCount } = await supabase
-            .from('followers')
+            .from('follows')
             .select('*', { count: 'exact' })
             .eq('following_id', user.id)
 
           const { count: followingCount } = await supabase
-            .from('followers')
+            .from('follows')
             .select('*', { count: 'exact' })
             .eq('follower_id', user.id)
 
           const { count: conversationCount } = await supabase
-            .from('conversation_members')
+            .from('conversation_participants')
             .select('*', { count: 'exact' })
             .eq('user_id', user.id)
 
@@ -356,7 +353,7 @@ export function AdminDashboard() {
                 ) : (
                   users.map((user) => (
                     <tr key={user.id} className="hover:bg-muted/50 transition-colors">
-                      <td className="px-6 py-4 text-sm font-medium">{user.full_name || 'N/A'}</td>
+                      <td className="px-6 py-4 text-sm font-medium">{user.username || 'N/A'}</td>
                       <td className="px-6 py-4 text-sm text-muted-foreground">{user.email}</td>
                       <td className="px-6 py-4 text-sm font-medium">{user.followers_count || 0}</td>
                       <td className="px-6 py-4 text-sm font-medium">{user.following_count || 0}</td>
@@ -364,12 +361,12 @@ export function AdminDashboard() {
                       <td className="px-6 py-4 text-sm">
                         <span
                           className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                            user.is_admin
+                            user.email === 'sangamkunwar48@gmail.com'
                               ? 'bg-primary/20 text-primary'
                               : 'bg-muted text-muted-foreground'
                           }`}
                         >
-                          {user.is_admin ? 'Admin' : 'User'}
+                          {user.email === 'sangamkunwar48@gmail.com' ? 'Admin' : 'User'}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-sm text-muted-foreground">
