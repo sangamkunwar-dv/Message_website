@@ -42,9 +42,12 @@ export default function Login() {
 
       // Sync user to database
       try {
-        await fetch('/api/auth/sync-user', {
+        const syncResponse = await fetch('/api/auth/sync-user', {
           method: 'POST',
         })
+        if (!syncResponse.ok) {
+          console.error('Sync failed:', await syncResponse.text())
+        }
       } catch (syncError) {
         console.error('Error syncing user:', syncError)
       }
@@ -52,16 +55,18 @@ export default function Login() {
       // Check if this is the admin email and redirect accordingly
       const isAdmin = email === 'sangamkunwar48@gmail.com'
       
-      if (isAdmin) {
-        router.push('/admin')
-      } else {
-        router.push('/chat')
-      }
+      // Use replace instead of push to prevent back button issues
+      setTimeout(() => {
+        if (isAdmin) {
+          window.location.href = '/admin'
+        } else {
+          window.location.href = '/chat'
+        }
+      }, 100)
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'An error occurred'
       setError(errorMessage)
       console.error('Login error:', err)
-    } finally {
       setLoading(false)
     }
   }

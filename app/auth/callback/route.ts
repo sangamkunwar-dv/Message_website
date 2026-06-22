@@ -45,7 +45,8 @@ export async function GET(request: NextRequest) {
         redirectPath = '/admin'
       }
       
-      return NextResponse.redirect(`${origin}${redirectPath}`)
+      // Use a temporary redirect to a confirmation page that will do the final redirect
+      return NextResponse.redirect(`${origin}/auth/oauth-success?redirect=${encodeURIComponent(redirectPath)}`)
     }
   }
 
