@@ -21,14 +21,14 @@ export function ConversationItem({ conversation, onClick }: ConversationItemProp
       <div className="flex items-center gap-3">
         <div className="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold">
           {conversation.conversation_type === 'direct'
-            ? otherUser?.username?.[0]?.toUpperCase() || '?'
+            ? otherUser?.full_name?.[0]?.toUpperCase() || '?'
             : conversation.group_name?.[0]?.toUpperCase() || '?'}
         </div>
         <div className="flex-1 min-w-0">
           <p className="font-medium text-gray-900 truncate">
             {conversation.conversation_type === 'direct'
-              ? otherUser?.username || 'Loading...'
-              : conversation.group_name}
+              ? otherUser?.full_name || conversation.title || 'User'
+              : conversation.group_name || conversation.title}
           </p>
           <p className="text-sm text-gray-600 truncate">
             {conversation.last_message?.content || 'No messages yet'}

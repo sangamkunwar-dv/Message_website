@@ -32,16 +32,15 @@ export function ChatWindow() {
     try {
       const { data, error } = await supabase
         .from('messages')
-        .select(`*, users:sender_id(id, username, avatar_url), attachments(*)`)
+        .select(`*, profiles:sender_id(id, full_name, avatar_url)`)
         .eq('conversation_id', currentConversation.id)
-        .is('deleted_at', null)
         .order('created_at', { ascending: true })
 
       if (error) throw error
       
       const formattedMessages = (data || []).map((msg: any) => ({
         ...msg,
-        sender: msg.users
+        sender: msg.profiles
       }))
       
       setMessages(formattedMessages)
@@ -57,12 +56,12 @@ export function ChatWindow() {
     try {
       const { data: participants } = await supabase
         .from('conversation_participants')
-        .select('user_id, users(id, username, avatar_url, email)')
+        .select('user_id, profiles:user_id(id, full_name, avatar_url, email)')
         .eq('conversation_id', currentConversation.id)
 
       const other = participants?.find((p: any) => p.user_id !== currentUser?.id)
       if (other) {
-        setOtherUser(other.users)
+        setOtherUser(other.profiles)
       }
     } catch (error) {
       console.error('Error loading other user:', error)
@@ -112,13 +111,13 @@ export function ChatWindow() {
       <div className="p-4 border-b border-border flex items-center justify-between bg-card sticky top-16 sm:top-0 z-40">
         <div className="flex items-center gap-3 min-w-0">
           <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold flex-shrink-0">
-            {otherUser?.username?.[0]?.toUpperCase() || '?'}
+            {otherUser?.full_name?.[0]?.toUpperCase() || '?'}
           </div>
           <div className="min-w-0">
             <h2 className="font-bold truncate">
               {currentConversation.conversation_type === 'direct'
-                ? otherUser?.username || 'Loading...'
-                : currentConversation.group_name}
+                ? otherUser?.full_name || currentConversation.title || 'User'
+                : currentConversation.group_name || currentConversation.title}
             </h2>
             <p className="text-xs text-muted-foreground">Active now</p>
           </div>

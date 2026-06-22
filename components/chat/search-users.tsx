@@ -4,12 +4,13 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { useChatStore } from '@/lib/store/chat-store'
-import { MessageCircle, User } from 'lucide-react'
+import { MessageCircle, UserPlus, UserCheck } from 'lucide-react'
 
 export function SearchUsers() {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
+  const [followingUsers, setFollowingUsers] = useState<Set<string>>(new Set())
   const router = useRouter()
   const supabase = createClient()
   const { currentUser, addConversation, setCurrentConversation } = useChatStore()
@@ -32,7 +33,19 @@ export function SearchUsers() {
         .limit(10)
 
       // Filter out current user
-      setResults((data || []).filter(user => user.id !== currentUser?.id))
+      const filteredResults = (data || []).filter(user => user.id !== currentUser?.id)
+      setResults(filteredResults)
+
+      // Fetch follow status for all results
+      if (filteredResults.length > 0 && currentUser) {
+        const { data: followers } = await supabase
+          .from('followers')
+          .select('following_id')
+          .eq('follower_id', currentUser.id)
+
+        const followingSet = new Set(followers?.map(f => f.following_id) || [])
+        setFollowingUsers(followingSet)
+      }
     } catch (error) {
       console.error('Search error:', error)
       setResults([])
@@ -45,6 +58,38 @@ export function SearchUsers() {
     router.push(`/user/${userId}`)
     setQuery('')
     setResults([])
+  }
+
+  const handleFollowToggle = async (userId: string) => {
+    if (!currentUser) return
+
+    try {
+      const isFollowing = followingUsers.has(userId)
+
+      if (isFollowing) {
+        // Unfollow
+        await supabase
+          .from('followers')
+          .delete()
+          .eq('follower_id', currentUser.id)
+          .eq('following_id', userId)
+
+        setFollowingUsers(prev => {
+          const newSet = new Set(prev)
+          newSet.delete(userId)
+          return newSet
+        })
+      } else {
+        // Follow
+        await supabase
+          .from('followers')
+          .insert({ follower_id: currentUser.id, following_id: userId })
+
+        setFollowingUsers(prev => new Set(prev).add(userId))
+      }
+    } catch (error) {
+      console.error('Error toggling follow:', error)
+    }
   }
 
   const handleMessage = async (selectedUser: any) => {
@@ -116,34 +161,49 @@ export function SearchUsers() {
         <div className="text-sm text-muted-foreground text-center py-2">Searching...</div>
       )}
 
-      <div className="max-h-64 overflow-y-auto space-y-1">
-        {results.length === 0 && query.length >= 2 && !loading && (
-          <div className="text-sm text-muted-foreground text-center py-3">
-            No users found
-          </div>
-        )}
-        {results.map((user) => (
-          <div
-            key={user.id}
-            className="flex items-center justify-between p-2 rounded-lg hover:bg-muted transition-colors group"
-          >
-            <button
-              onClick={() => handleViewProfile(user.id)}
-              className="flex-1 text-left"
+      {query.length >= 2 && (
+        <div className="max-h-64 overflow-y-auto space-y-1 border border-border rounded-lg bg-card p-2">
+          {results.length === 0 && !loading && (
+            <div className="text-sm text-muted-foreground text-center py-3">
+              No users found
+            </div>
+          )}
+          {results.map((user) => (
+            <div
+              key={user.id}
+              className="flex items-center justify-between p-2 rounded-lg hover:bg-muted transition-colors"
             >
-              <p className="font-medium text-sm">{user.full_name || 'User'}</p>
-              <p className="text-xs text-muted-foreground">{user.email}</p>
-            </button>
-            <button
-              onClick={() => handleMessage(user)}
-              className="p-2 hover:bg-primary/10 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
-              title="Message"
-            >
-              <MessageCircle className="w-4 h-4 text-primary" />
-            </button>
-          </div>
-        ))}
-      </div>
+              <button
+                onClick={() => handleViewProfile(user.id)}
+                className="flex-1 text-left"
+              >
+                <p className="font-medium text-sm">{user.full_name || 'User'}</p>
+                <p className="text-xs text-muted-foreground">{user.email}</p>
+              </button>
+              <div className="flex gap-1 ml-2">
+                <button
+                  onClick={() => handleFollowToggle(user.id)}
+                  className="p-2 hover:bg-blue-100 dark:hover:bg-blue-900 rounded-lg transition-colors flex-shrink-0"
+                  title={followingUsers.has(user.id) ? 'Unfollow' : 'Follow'}
+                >
+                  {followingUsers.has(user.id) ? (
+                    <UserCheck className="w-4 h-4 text-blue-600" />
+                  ) : (
+                    <UserPlus className="w-4 h-4 text-muted-foreground" />
+                  )}
+                </button>
+                <button
+                  onClick={() => handleMessage(user)}
+                  className="p-2 hover:bg-primary/10 rounded-lg transition-colors flex-shrink-0"
+                  title="Message"
+                >
+                  <MessageCircle className="w-4 h-4 text-primary" />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
