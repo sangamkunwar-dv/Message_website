@@ -76,35 +76,55 @@ export function MessageInput({ conversationId }: MessageInputProps) {
 
         if (msgError) throw msgError
 
-        // Create attachment record with file URL
-        const fileUrl = URL.createObjectURL(file)
-        const { error: attachError } = await supabase.from('attachments').insert({
-          message_id: message.id,
-          file_url: fileUrl,
-          file_name: file.name,
-          file_type: file.type,
-          file_size: file.size,
-        })
+        // Upload file to Blob storage
+        try {
+          const fileName = `${Date.now()}-${file.name}`
+          const response = await fetch('/api/upload', {
+            method: 'POST',
+            headers: { 'Content-Type': file.type },
+            body: file,
+          })
+          
+          if (!response.ok) throw new Error('Upload failed')
+          const { url: fileUrl } = await response.json()
 
-        if (attachError) throw attachError
+          // Create attachment record with blob URL
+          const { error: attachError } = await supabase.from('attachments').insert({
+            message_id: message.id,
+            file_url: fileUrl,
+            file_name: file.name,
+            file_type: file.type,
+            file_size: file.size,
+          })
 
-        addMessage({
-          ...message,
-          sender: currentUser,
-          attachments: [
-            {
-              id: message.id,
-              message_id: message.id,
-              file_url: fileUrl,
-              file_name: file.name,
-              file_type: file.type,
-              file_size: file.size,
-            },
-          ],
-        })
+          if (attachError) throw attachError
+
+          addMessage({
+            ...message,
+            sender: currentUser,
+            attachments: [
+              {
+                id: message.id,
+                message_id: message.id,
+                file_url: fileUrl,
+                file_name: file.name,
+                file_type: file.type,
+                file_size: file.size,
+              },
+            ],
+          })
+        } catch (uploadError) {
+          console.error('Error uploading file to Blob:', uploadError)
+          // Still add message without attachment
+          addMessage({
+            ...message,
+            sender: currentUser,
+            attachments: [],
+          })
+        }
       }
     } catch (error) {
-      console.error('Error uploading file:', error)
+      console.error('Error processing files:', error)
     } finally {
       setUploadingFiles(false)
       if (fileInputRef.current) {

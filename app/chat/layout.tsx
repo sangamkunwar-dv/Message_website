@@ -18,36 +18,63 @@ export default function ChatLayout({
   useEffect(() => {
     const initializeChat = async () => {
       try {
-        // Get current user
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) {
+        // Get current user from auth
+        const { data: { user: authUser } } = await supabase.auth.getUser()
+        if (!authUser) {
           router.push('/auth/login')
           return
         }
 
-        // Fetch user profile
-        const { data: userProfile } = await supabase
-          .from('profiles')
+        // Fetch user profile from users table
+        const { data: userProfile, error: userError } = await supabase
+          .from('users')
           .select('*')
-          .eq('id', user.id)
+          .eq('id', authUser.id)
           .single()
 
-        if (userProfile) {
-          setCurrentUser(userProfile)
+        if (userError) {
+          console.error('Error fetching user:', userError)
+          return
         }
 
-        // Fetch conversations
-        const { data: participants } = await supabase
-          .from('conversation_participants')
-          .select('conversation_id, conversations(*)')
-          .eq('user_id', user.id)
-          .order('joined_at', { ascending: false })
+        if (userProfile) {
+          setCurrentUser({
+            id: userProfile.id,
+            username: userProfile.username,
+            email: userProfile.email,
+            avatar_url: userProfile.avatar_url,
+          })
+        }
 
-        if (participants) {
-          const conversations = participants.map((p: any) => ({
-            ...p.conversations,
-            participants: [] // Will be loaded per conversation
-          }))
+        // Fetch conversations with better structure
+        const { data: participants, error: convError } = await supabase
+          .from('conversation_participants')
+          .select(`
+            conversation_id,
+            conversations (
+              id,
+              conversation_type,
+              group_name,
+              group_avatar_url,
+              created_at,
+              updated_at
+            )
+          `)
+          .eq('user_id', authUser.id)
+          .order('created_at', { ascending: false })
+
+        if (convError) {
+          console.error('Error fetching conversations:', convError)
+          return
+        }
+
+        if (participants && Array.isArray(participants)) {
+          const conversations = participants
+            .filter((p: any) => p.conversations)
+            .map((p: any) => ({
+              ...p.conversations,
+              participants: [],
+            }))
           setConversations(conversations)
         }
       } catch (error) {
@@ -56,7 +83,7 @@ export default function ChatLayout({
     }
 
     initializeChat()
-  }, [setCurrentUser, setConversations, router])
+  }, [setCurrentUser, setConversations, router, supabase])
 
   return (
     <div className="flex h-screen bg-background text-foreground">

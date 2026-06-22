@@ -5,10 +5,13 @@ import { createClient } from '@/lib/supabase/client'
 import { useChatStore } from '@/lib/store/chat-store'
 import { MessageBubble } from './message-bubble'
 import { MessageInput } from './message-input'
+import { CallDialog } from './call-dialog'
 
 export function ChatWindow() {
   const { currentConversation, currentUser, messages, setMessages, addMessage } = useChatStore()
   const [otherUser, setOtherUser] = useState<any>(null)
+  const [callDialogOpen, setCallDialogOpen] = useState(false)
+  const [messagesLoading, setMessagesLoading] = useState(true)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const supabase = createClient()
 
@@ -17,9 +20,12 @@ export function ChatWindow() {
     if (currentConversation) {
       loadMessages()
       loadOtherUser()
-      subscribeToMessages()
+      const unsubscribe = subscribeToMessages()
+      return () => {
+        unsubscribe?.()
+      }
     }
-  }, [currentConversation])
+  }, [currentConversation?.id])
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -29,25 +35,42 @@ export function ChatWindow() {
   const loadMessages = async () => {
     if (!currentConversation) return
 
+    setMessagesLoading(true)
     try {
       const { data, error } = await supabase
         .from('messages')
-        .select(`*, users:sender_id(id, username, avatar_url), attachments(*)`)
+        .select(`
+          id,
+          conversation_id,
+          sender_id,
+          content,
+          message_type,
+          created_at,
+          deleted_at,
+          users!sender_id(id, username, email, avatar_url),
+          attachments(*)
+        `)
         .eq('conversation_id', currentConversation.id)
         .is('deleted_at', null)
         .order('created_at', { ascending: true })
 
-      if (error) throw error
+      if (error) {
+        console.error('Error loading messages:', error)
+        setMessages([])
+        return
+      }
       
       const formattedMessages = (data || []).map((msg: any) => ({
         ...msg,
-        sender: msg.users
+        sender: msg.users,
       }))
       
       setMessages(formattedMessages)
     } catch (error) {
       console.error('Error loading messages:', error)
       setMessages([])
+    } finally {
+      setMessagesLoading(false)
     }
   }
 
@@ -82,14 +105,59 @@ export function ChatWindow() {
           table: 'messages',
           filter: `conversation_id=eq.${currentConversation.id}`,
         },
-        (payload) => {
-          addMessage(payload.new as any)
+        async (payload) => {
+          // Fetch the message with full details
+          const { data: messageData } = await supabase
+            .from('messages')
+            .select(`
+              id,
+              conversation_id,
+              sender_id,
+              content,
+              message_type,
+              created_at,
+              deleted_at,
+              users!sender_id(id, username, email, avatar_url),
+              attachments(*)
+            `)
+            .eq('id', payload.new.id)
+            .single()
+
+          if (messageData) {
+            addMessage({
+              ...messageData,
+              sender: messageData.users,
+            })
+          }
         }
       )
       .subscribe()
 
     return () => {
       subscription.unsubscribe()
+    }
+  }
+
+  const handleStartCall = async (callType: 'audio' | 'video') => {
+    try {
+      const response = await fetch('/api/calls', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          conversationId: currentConversation?.id,
+          callType,
+        }),
+      })
+
+      if (!response.ok) throw new Error('Failed to start call')
+
+      const { roomId } = await response.json()
+
+      // For now, we'll show an alert since real WebRTC/calling service isn't integrated
+      alert(`${callType.charAt(0).toUpperCase() + callType.slice(1)} call started! Room ID: ${roomId}`)
+    } catch (error) {
+      console.error('Error starting call:', error)
+      alert('Failed to start call')
     }
   }
 
@@ -125,12 +193,22 @@ export function ChatWindow() {
         </div>
 
         <div className="flex gap-1 sm:gap-2 flex-shrink-0">
-          <button className="p-2 hover:bg-muted rounded-lg transition-colors" aria-label="Call">
+          <button
+            onClick={() => handleStartCall('audio')}
+            className="p-2 hover:bg-muted rounded-lg transition-colors"
+            aria-label="Audio Call"
+            title="Start audio call"
+          >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
             </svg>
           </button>
-          <button className="p-2 hover:bg-muted rounded-lg transition-colors" aria-label="Video Call">
+          <button
+            onClick={() => handleStartCall('video')}
+            className="p-2 hover:bg-muted rounded-lg transition-colors"
+            aria-label="Video Call"
+            title="Start video call"
+          >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
             </svg>
@@ -145,13 +223,29 @@ export function ChatWindow() {
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {messages.map((message) => (
-          <MessageBubble
-            key={message.id}
-            message={message}
-            isOwn={message.sender_id === currentUser?.id}
-          />
-        ))}
+        {messagesLoading ? (
+          <div className="flex items-center justify-center h-full">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+              <p className="text-muted-foreground">Loading messages...</p>
+            </div>
+          </div>
+        ) : messages.length === 0 ? (
+          <div className="flex items-center justify-center h-full">
+            <div className="text-center text-muted-foreground">
+              <p>No messages yet</p>
+              <p className="text-sm">Start the conversation!</p>
+            </div>
+          </div>
+        ) : (
+          messages.map((message) => (
+            <MessageBubble
+              key={message.id}
+              message={message}
+              isOwn={message.sender_id === currentUser?.id}
+            />
+          ))
+        )}
         <div ref={messagesEndRef} />
       </div>
 
