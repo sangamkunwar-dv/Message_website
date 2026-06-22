@@ -29,9 +29,8 @@ export function MessageInput({ conversationId }: MessageInputProps) {
           conversation_id: conversationId,
           sender_id: currentUser.id,
           content: content.trim(),
-          message_type: 'text',
         })
-        .select()
+        .select('*')
         .single()
 
       if (error) throw error
@@ -39,7 +38,6 @@ export function MessageInput({ conversationId }: MessageInputProps) {
       addMessage({
         ...message,
         sender: currentUser,
-        attachments: [],
       })
 
       setContent('')
@@ -57,50 +55,43 @@ export function MessageInput({ conversationId }: MessageInputProps) {
     setUploadingFiles(true)
     try {
       for (const file of Array.from(files)) {
-        // Determine message type
-        let messageType: 'image' | 'video' | 'file' = 'file'
-        if (file.type.startsWith('image/')) messageType = 'image'
-        else if (file.type.startsWith('video/')) messageType = 'video'
+        // Upload file to blob storage
+        const uniqueFileName = `${Date.now()}-${file.name}`
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('chat-attachments')
+          .upload(`${conversationId}/${uniqueFileName}`, file)
 
-        // Create message record
+        if (uploadError) throw uploadError
+
+        // Get public URL
+        const { data: urlData } = supabase.storage
+          .from('chat-attachments')
+          .getPublicUrl(`${conversationId}/${uniqueFileName}`)
+
+        // Create message record with file info in content as JSON
+        const messageContent = JSON.stringify({
+          type: 'file',
+          fileName: file.name,
+          fileType: file.type,
+          fileSize: file.size,
+          fileUrl: urlData.publicUrl,
+        })
+
         const { data: message, error: msgError } = await supabase
           .from('messages')
           .insert({
             conversation_id: conversationId,
             sender_id: currentUser.id,
-            message_type: messageType,
-            content: file.name,
+            content: messageContent,
           })
-          .select()
+          .select('*')
           .single()
 
         if (msgError) throw msgError
 
-        // Create attachment record with file URL
-        const fileUrl = URL.createObjectURL(file)
-        const { error: attachError } = await supabase.from('attachments').insert({
-          message_id: message.id,
-          file_url: fileUrl,
-          file_name: file.name,
-          file_type: file.type,
-          file_size: file.size,
-        })
-
-        if (attachError) throw attachError
-
         addMessage({
           ...message,
           sender: currentUser,
-          attachments: [
-            {
-              id: message.id,
-              message_id: message.id,
-              file_url: fileUrl,
-              file_name: file.name,
-              file_type: file.type,
-              file_size: file.size,
-            },
-          ],
         })
       }
     } catch (error) {

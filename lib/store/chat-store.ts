@@ -2,7 +2,7 @@ import { create } from 'zustand'
 
 export interface User {
   id: string
-  username: string
+  full_name?: string
   email: string
   avatar_url?: string
 }
@@ -12,19 +12,9 @@ export interface Message {
   conversation_id: string
   sender_id: string
   content?: string
-  message_type: 'text' | 'image' | 'video' | 'file' | 'call'
   created_at: string
+  updated_at?: string
   sender?: User
-  attachments?: Attachment[]
-}
-
-export interface Attachment {
-  id: string
-  message_id: string
-  file_url: string
-  file_name: string
-  file_type: string
-  file_size?: number
 }
 
 export interface Conversation {
