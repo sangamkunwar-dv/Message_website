@@ -40,6 +40,15 @@ export default function Login() {
         throw loginError
       }
 
+      // Sync user to database
+      try {
+        await fetch('/api/auth/sync-user', {
+          method: 'POST',
+        })
+      } catch (syncError) {
+        console.error('Error syncing user:', syncError)
+      }
+
       // Check if this is the admin email and redirect accordingly
       const isAdmin = email === 'sangamkunwar48@gmail.com'
       
